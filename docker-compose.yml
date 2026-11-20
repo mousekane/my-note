@@ -7,9 +7,12 @@ services:
     # build: .
     container_name: mynote
     restart: unless-stopped
-    ports:
-      - "8787:8787"
+    # 主机网络: 直接用主机的端口, 不做端口映射
+    # (OpenWrt 的防火墙会拦 Docker 桥接端口转发, 主机网络才能装完直接打开)
+    network_mode: host
     environment:
+      # 服务端口 (主机网络下直接占主机的这个端口, 默认 8787)
+      - PORT=${MYNOTE_PORT:-8787}
       # 登录密码 / API 密钥 / 会话密钥, 不填都是 admin; 改了记得重启容器
       - NOTES_PASSWORD=${NOTES_PASSWORD:-admin}
       - NOTES_API_KEY=${NOTES_API_KEY:-admin}
