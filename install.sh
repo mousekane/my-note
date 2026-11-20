@@ -87,12 +87,14 @@ if $SUDO docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER_NAME"; then
   $SUDO docker rm -f "$CONTAINER_NAME" >/dev/null
 fi
 
-# 5. 启动
-echo "[mynote] 启动容器 (端口 $PORT, 数据卷 $VOLUME_NAME)..."
+# 5. 启动 (主机网络: 直接用主机的端口, 不做端口映射。
+#    OpenWrt 的防火墙默认会拦 Docker 桥接端口转发, 主机网络才能装完直接打开)
+echo "[mynote] 启动容器 (主机网络, 端口 $PORT, 数据卷 $VOLUME_NAME)..."
 $SUDO docker run -d \
   --name "$CONTAINER_NAME" \
   --restart unless-stopped \
-  -p "$PORT:8787" \
+  --network host \
+  -e "PORT=$PORT" \
   -e "NOTES_PASSWORD=$PASSWORD" \
   -e "NOTES_API_KEY=$PASSWORD" \
   -e "NOTES_SESSION_SECRET=$PASSWORD" \
