@@ -38,6 +38,8 @@ curl -fsSL https://gh.19901980.xyz/https://raw.githubusercontent.com/mousekane/m
 
 装完打开 `http://本机IP:8787`，密码 `admin` 登录。**登录后立刻改密码**：点右上角三条杠进设置 → 修改密码，输新密码保存。改完登录密码和 API 密钥一起变，旧的 admin 立刻失效。
 
+容器用主机网络直接跑（`--network host`），不做端口映射：OpenWrt 的防火墙默认会拦 Docker 桥接端口转发，主机网络才能装完直接打开。数据仍存在 `mynote-data` 卷里（挂载到 `/app/data`），删容器也不会丢。
+
 想换端口或密码再装：
 
 ```bash
@@ -110,7 +112,7 @@ docker compose up -d --build
 ```bash
 docker build -t mynote:latest .
 docker run -d --name mynote --restart unless-stopped \
-  -p 8787:8787 -v mynote-data:/app/data \
+  --network host -v mynote-data:/app/data \
   -e NOTES_PASSWORD=admin -e NOTES_API_KEY=admin -e NOTES_SESSION_SECRET=admin \
   mynote:latest
 ```
@@ -130,7 +132,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -t mynote:latest .
 | 想改什么 | 怎么做 |
 | --- | --- |
 | 登录密码 / API 密钥 | 把 `.env.example` 复制成 `.env` 再改里面的值，然后 `docker compose up -d` 重启；或改 `docker-compose.yml` 里的 `environment`；一键安装脚本用 `MYNOTE_PASSWORD=... bash install.sh` |
-| 端口（默认 8787） | 改 `docker-compose.yml` 里的 `"8787:8787"`，左边是对外端口，比如 `"8080:8787"` 就是用 8080 访问；一键安装脚本用 `MYNOTE_PORT=8080` |
+| 端口（默认 8787） | 容器用主机网络，直接占主机的端口：一键安装脚本用 `MYNOTE_PORT=8080`；compose 部署改 `docker-compose.yml` 里 environment 的 `PORT` |
 | 数据放哪 | 默认存在 Docker 的 `mynote-data` 卷里。想放指定目录，把 `volumes` 里的 `- mynote-data:/app/data` 改成 `- /你的目录:/app/data` |
 
 不改配置也能直接用：密码和 API 密钥默认都是 `admin`。
@@ -221,7 +223,7 @@ npx wrangler deploy
 
 ## 常见问题
 
-- **端口被占用**：改 `docker-compose.yml` 里的对外端口（见方式二配置表），或一键安装时设 `MYNOTE_PORT`
+- **端口被占用**：一键安装时设 `MYNOTE_PORT=8080`；compose 部署改 `docker-compose.yml` 里 environment 的 `PORT`（容器用主机网络，直接占主机的端口）
 - **打开一直让登录，登录完又弹回登录页**：关掉重开一次；还不行就清掉这个网站的缓存数据再进
 - **改了代码，手机上没变化**：手机关掉重开一次（Service Worker 缓存，要拉新版）
 - **容器启动后马上退出**：跑 `docker logs mynote` 看报错，常见是 8787 端口被占或 `/app/data` 写不进去
@@ -235,7 +237,7 @@ npx wrangler deploy
 | `wrangler.toml` | Cloudflare 部署配置（D1 绑定） |
 | `install.sh` | Docker 一键安装脚本 |
 | `Dockerfile` | 构建镜像：node:20-slim + miniflare（多架构） |
-| `docker-compose.yml` | Docker 一键启动：拉预构建镜像、端口、环境变量、数据卷 |
+| `docker-compose.yml` | Docker 一键启动：拉预构建镜像、主机网络、环境变量、数据卷 |
 | `server.mjs` | Docker 启动器：把 HTTP 请求转给 Worker |
 | `package.json` / `package-lock.json` | 只依赖 miniflare 一个包 |
 | `.env.example` | 环境变量示例，复制成 `.env` 再改 |
