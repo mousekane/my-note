@@ -53,3 +53,49 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # 打版本标签 (v*, 如 v1.0.0) 时, 额外把镜像导出成 tar 包挂到 Release 上,
+  # 供 registry 镜像都拉不到时离线导入用 (用法见 README “兜底”一节)。
+  release-tar:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU (跨架构构建用)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build amd64 tar
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          outputs: type=docker,dest=/tmp/mynote-linux-amd64.tar
+
+      - name: Build arm64 tar
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          outputs: type=docker,dest=/tmp/mynote-linux-arm64.tar
+
+      - name: Upload tars to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            /tmp/mynote-linux-amd64.tar
+            /tmp/mynote-linux-arm64.tar
