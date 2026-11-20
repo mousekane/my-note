@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 # MYNOTE 私密笔记 - 一键安装脚本
 #
-# 用法 (二选一):
-#   curl -fsSL https://raw.githubusercontent.com/mousekane/my-note/main/install.sh | bash
-#   bash install.sh
+# 用法:
+#   ① 通用 (从 ghcr.io 拉镜像):
+#     curl -fsSL https://raw.githubusercontent.com/mousekane/my-note/main/install.sh | bash
+#   ② 大陆地区 (脚本走 gh-proxy 加速、镜像走 dockerproxy 镜像, 均已实测):
+#     curl -fsSL https://gh.19901980.xyz/https://raw.githubusercontent.com/mousekane/my-note/main/install.sh | MYNOTE_IMAGE=ghcr.dockerproxy.net/mousekane/my-note:latest bash
+#   本地已有脚本文件: bash install.sh
 #
 # 可选环境变量:
 #   MYNOTE_PORT      对外端口, 默认 8787
 #   MYNOTE_PASSWORD  初始登录密码 (同时也是 API 密钥), 默认 admin
 #   MYNOTE_IMAGE     镜像地址, 默认 ghcr.io/mousekane/my-note:latest
+#                    大陆地区拉不到 ghcr.io 可用 ghcr.dockerproxy.net/mousekane/my-note:latest
+#                    (已实测同步; 备选 ghcr.nju.edu.cn/mousekane/my-note:latest, 速度因网络而异)
+#   MYNOTE_TAR       离线镜像包路径 (如 ./mynote-linux-arm64.tar), 设了就用 docker load 导入、不联网拉镜像
+#                    兜底: registry 镜像都拉不到时, 从 GitHub Release 下载 tar 包 (见 README “兜底”一节)
 #   MYNOTE_CONTAINER 容器名, 默认 mynote
 #   MYNOTE_VOLUME    数据卷名, 默认 mynote-data
 #
@@ -65,9 +72,14 @@ $SUDO docker info >/dev/null 2>&1 || {
   exit 1
 }
 
-# 3. 拉镜像
-echo "[mynote] 拉取镜像 $IMAGE ..."
-$SUDO docker pull "$IMAGE"
+# 3. 拉镜像 (或 MYNOTE_TAR 指向本地 tar 包时直接 docker load 导入, 见 README 兜底一节)
+if [ -n "${MYNOTE_TAR:-}" ]; then
+  echo "[mynote] 从 $MYNOTE_TAR 导入镜像..."
+  $SUDO docker load -i "$MYNOTE_TAR"
+else
+  echo "[mynote] 拉取镜像 $IMAGE ..."
+  $SUDO docker pull "$IMAGE"
+fi
 
 # 4. 已有同名容器就先删掉 (数据在卷里, 不会丢)
 if $SUDO docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER_NAME"; then
