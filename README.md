@@ -28,6 +28,14 @@
 curl -fsSL https://raw.githubusercontent.com/mousekane/my-note/main/install.sh | bash
 ```
 
+大陆地区：如果上面那行拉镜像很慢或拉不到（比如家里路由器没开代理），用下面这行：脚本走 gh-proxy 加速下载（已实测和原文件字节一致），镜像走 dockerproxy 镜像（实测大陆可用，amd64 + arm64 都有）：
+
+```bash
+curl -fsSL https://gh.19901980.xyz/https://raw.githubusercontent.com/mousekane/my-note/main/install.sh | MYNOTE_IMAGE=ghcr.dockerproxy.net/mousekane/my-note:latest bash
+```
+
+还不行的话，换南京大学镜像再试（也是已实测同步的备选）：把上面命令里的 `ghcr.dockerproxy.net` 换成 `ghcr.nju.edu.cn`。两个镜像的同步状态都已实测和 ghcr.io 一致（同一个镜像摘要），速度因网络而异：在作者的 R2S 上实测 dockerproxy 约 3.4MB/s、南京大学镜像只有约 10KB/s、ghcr.io 拉到一半就卡住不动。
+
 装完打开 `http://本机IP:8787`，密码 `admin` 登录。**登录后立刻改密码**：点右上角三条杠进设置 → 修改密码，输新密码保存。改完登录密码和 API 密钥一起变，旧的 admin 立刻失效。
 
 想换端口或密码再装：
@@ -55,6 +63,21 @@ docker volume inspect mynote-data   # 数据卷在主机上的位置
 ```bash
 bash install.sh
 ```
+
+### 兜底：镜像实在拉不到，用离线 tar 包
+
+如果上面两个镜像地址都拉不到（比如网络把 registry 协议也挡了），可以用离线镜像包：每次打版本标签（`v*`，比如 `v1.0.0`）都会自动把镜像导出成 tar 包挂到 Release 上，`mynote-linux-amd64.tar`（x86）和 `mynote-linux-arm64.tar`（树莓派 / R2S）各一个，下载后 `docker load` 导入再装，不用联网拉镜像。
+
+```bash
+# 以 arm64（树莓派 / R2S）为例：先下载 tar 包（走 gh-proxy 加速，大陆能下，已实测和原文件字节一致）
+curl -fsSL -o mynote-linux-arm64.tar \
+  https://gh.19901980.xyz/https://github.com/mousekane/my-note/releases/download/v1.0.0/mynote-linux-arm64.tar
+# 再用 tar 包安装（不再联网拉镜像）
+curl -fsSL https://gh.19901980.xyz/https://raw.githubusercontent.com/mousekane/my-note/main/install.sh -o install.sh
+MYNOTE_TAR=./mynote-linux-arm64.tar bash install.sh
+```
+
+注意：`v1.0.0` 换成仓库 Releases 页面上实际有的最新版本号；tar 包是随版本 Release 自动生成的，没有新版本就没有新 tar 包，旧版本用旧 tar 包一样能跑。x86 机器把上面两处 `arm64` 换成 `amd64` 即可。
 
 ---
 
