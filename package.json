@@ -1,0 +1,1 @@
+{"dependencies":{"miniflare":"4.20260730.0"},"description":"MYNOTE 私密笔记 - Docker 版 (Miniflare 本地运行 Worker + D1)","name":"mynote","private":true,"scripts":{"start":"node server.mjs"},"type":"module","version":"1.0.0"}

@@ -1,0 +1,11 @@
+name = "notes"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# D1 数据库绑定。先跑 `npx wrangler d1 create notes-db`，把返回的
+# database_id 填到下面，再跑 `npx wrangler deploy`。
+# 不用命令行的话可以不用这个文件，直接看 README 里网页版部署。
+[[d1_databases]]
+binding = "NOTES_DB"
+database_name = "notes-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"

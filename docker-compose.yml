@@ -1,0 +1,22 @@
+# MYNOTE 私密笔记 - 一键部署 (拉预构建镜像, 不用本地编译)
+# 用法: 在这个文件夹里跑 `docker compose up -d`, 打开 http://localhost:8787, 密码 admin
+# 想自己本地构建镜像, 把 image 一行换成 build: . , 再跑 `docker compose up -d --build`
+services:
+  mynote:
+    image: ghcr.io/mousekane/my-note:latest
+    # build: .
+    container_name: mynote
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    environment:
+      # 登录密码 / API 密钥 / 会话密钥, 不填都是 admin; 改了记得重启容器
+      - NOTES_PASSWORD=${NOTES_PASSWORD:-admin}
+      - NOTES_API_KEY=${NOTES_API_KEY:-admin}
+      - NOTES_SESSION_SECRET=${NOTES_SESSION_SECRET:-admin}
+    volumes:
+      # 笔记数据存在这里, 删容器也不会丢
+      - mynote-data:/app/data
+
+volumes:
+  mynote-data:
