@@ -1262,6 +1262,14 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    // 强制 HTTPS（仅 Cloudflare 直接部署）：url.protocol 就是浏览器用的协议，
+    // http 就跳。Docker 版不在这里跳：Miniflare 的 dispatchFetch 会跟随 Worker
+    // 返回的跳转（在容器里去抓 https 目标），既没必要、也可能失败；Docker 的
+    // 跳转由 server.mjs 在 Node 层直接做。
+    if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost' && url.protocol === 'http:') {
+      return Response.redirect('https://' + url.host + url.pathname + url.search, 301);
+    }
+
     if (path === '/manifest.json') {
       return json(MANIFEST, 200, { 'Cache-Control': 'public, max-age=86400' });
     }
@@ -1286,7 +1294,7 @@ export default {
       catch (e) { return json({ ok: false, data: null, error: { code: 'worker_error', message: String(e && e.message || e) } }, 500); }
     }
     if (path === '/' || path === '/index.html') {
-      return new Response(APP_HTML, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' } });
+      return new Response(APP_HTML, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'Strict-Transport-Security': 'max-age=31536000' } });
     }
     return fail('not_found', '页面不存在: ' + path, 404);
   },

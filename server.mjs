@@ -31,6 +31,15 @@ await mf.ready;
 console.log(`[mynote] worker ready, D1 data in ${DATA_DIR}`);
 
 const server = http.createServer(async (req, res) => {
+  // 反代告诉外面是 http 时，直接在这里 301 到 https，不进 Worker：
+  // Miniflare 的 dispatchFetch 会跟随 Worker 返回的跳转（去抓 https 目标），
+  // 在容器里既没必要、也可能失败；局域网直连（没这个头）不跳。
+  if (req.headers['x-forwarded-proto'] === 'http') {
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    res.writeHead(301, { Location: 'https://' + host + req.url });
+    res.end();
+    return;
+  }
   try {
     const url = `http://127.0.0.1:${PORT}${req.url}`;
     const headers = new Headers();

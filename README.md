@@ -211,7 +211,7 @@ npx wrangler deploy
 
 ## 它是怎么跑的
 
-全部代码就一个 `worker.js`：接口 + 网页 + PWA + MCP 都在里面。Cloudflare 版直接跑在 Worker 上，D1 就是数据库。Docker 版靠 Miniflare（Cloudflare Workers 的本地运行时）跑同一份 `worker.js`，D1 换成本地 SQLite 文件存在 `/app/data` 里，`server.mjs` 是个很小的 Node 启动器，只负责把 HTTP 请求转给 Worker。默认密码和 API 密钥都是 `admin`；登录 Cookie 的 `Secure` 属性只在 HTTPS 访问时才加（Docker 常走明文 HTTP，加了 `Secure` 浏览器就不回传 Cookie，会登录完立刻掉线）。
+全部代码就一个 `worker.js`：接口 + 网页 + PWA + MCP 都在里面。Cloudflare 版直接跑在 Worker 上，D1 就是数据库。Docker 版靠 Miniflare（Cloudflare Workers 的本地运行时）跑同一份 `worker.js`，D1 换成本地 SQLite 文件存在 `/app/data` 里，`server.mjs` 是个很小的 Node 启动器，只负责把 HTTP 请求转给 Worker。默认密码和 API 密钥都是 `admin`；登录 Cookie 的 `Secure` 属性只在 HTTPS 访问时才加（Docker 常走明文 HTTP，加了 `Secure` 浏览器就不回传 Cookie，会登录完立刻掉线）。通过域名 + 反代走 HTTPS 访问时（反代透传 X-Forwarded-Proto），http 请求会 301 跳到 https；局域网直接用 http://本机IP:8787 不受影响。
 
 ## 常见问题
 
